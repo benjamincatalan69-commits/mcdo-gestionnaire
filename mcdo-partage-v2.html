@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>McDoGestionnaire — Partagé</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;900&family=Barlow+Condensed:wght@700;900&display=swap');
+:root {
+  --red:#DA291C; --yellow:#FFC72C; --dark:#1a1a1a; --darker:#111;
+  --card:#222; --border:#333; --text:#f0f0f0; --muted:#888;
+  --green:#22c55e; --uber:#000000; --deliveroo:#00CCBC;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--darker);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh;font-size:15px;}
+
+header{background:var(--red);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(0,0,0,0.5);}
+.logo{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:var(--yellow);letter-spacing:-1px;}
+.sync-indicator{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,0.8);}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse-dot 2s infinite;}
+.sync-dot.syncing{background:var(--yellow);}
+.sync-dot.error{background:#ef4444;animation:none;}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.6;transform:scale(0.8);}}
+
+/* DELIVERY BANNER */
+.delivery-banner{background:var(--dark);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.delivery-badge{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:10px;padding:8px 12px;border:1px solid var(--border);flex:1;min-width:140px;}
+.delivery-logo{font-size:13px;font-weight:900;letter-spacing:-0.5px;}
+.uber-logo{color:#fff;}
+.deliveroo-logo{color:var(--deliveroo);}
+.delivery-pct-wrap{display:flex;align-items:center;gap:4px;margin-left:auto;}
+.delivery-pct{width:54px;background:var(--darker);border:1px solid var(--border);border-radius:6px;padding:4px 6px;color:var(--text);font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;text-align:center;outline:none;}
+.delivery-pct:focus{border-color:var(--yellow);}
+.pct-label{font-size:12px;color:var(--muted);}
+.btn-apply{padding:6px 12px;background:var(--yellow);color:var(--dark);border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.btn-apply:active{opacity:0.8;}
+
+/* VIEW TABS */
+.view-tabs{display:flex;background:var(--dark);border-bottom:1px solid var(--border);}
+.view-tab{flex:1;padding:10px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;}
+.view-tab.active{color:var(--yellow);border-bottom-color:var(--yellow);}
+
+/* STATS */
+.stats-bar{background:var(--dark);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;gap:0;overflow-x:auto;}
+.stat{flex:1;min-width:70px;display:flex;flex-direction:column;align-items:center;padding:4px 8px;border-right:1px solid var(--border);}
+.stat:last-child{border-right:none;}
+.stat-value{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--yellow);line-height:1;}
+.stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.3px;margin-top:2px;text-align:center;}
+
+/* TOOLBAR */
+.toolbar{padding:12px 16px;display:flex;flex-direction:column;gap:10px;background:var(--dark);border-bottom:1px solid var(--border);}
+.toolbar-row{display:flex;gap:8px;align-items:center;}
+.search-box{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 14px;color:var(--text);font-family:'Barlow',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;}
+.search-box:focus{border-color:var(--yellow);}
+.search-box::placeholder{color:var(--muted);}
+.cats{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;}
+.cats::-webkit-scrollbar{display:none;}
+.filter-btn{padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.filter-btn.active{background:var(--yellow);color:var(--dark);border-color:var(--yellow);}
+.btn{padding:9px 14px;border-radius:8px;border:none;font-family:'Barlow',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.btn-add{background:var(--red);color:#fff;flex:1;}
+.btn-export{background:transparent;color:var(--yellow);border:1px solid var(--yellow);}
+.btn-import{background:transparent;color:var(--green);border:1px solid var(--green);}
+
+/* LOADING */
+.loading-screen{position:fixed;inset:0;background:var(--darker);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:500;gap:16px;}
+.loading-logo{font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:900;color:var(--yellow);}
+.loading-bar{width:200px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.loading-fill{height:100%;background:var(--yellow);border-radius:2px;animation:load 1.5s ease-in-out forwards;}
+@keyframes load{from{width:0}to{width:100%}}
+.loading-text{font-size:13px;color:var(--muted);}
+
+/* TABLE */
+.table-wrap{padding:12px 16px;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:var(--card);border-bottom:2px solid var(--yellow);}
+th{padding:10px 8px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--yellow);cursor:pointer;white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);transition:background 0.15s;}
+tbody tr:active{background:rgba(255,199,44,0.05);}
+td{padding:9px 8px;vertical-align:middle;}
+
+.plu-code{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--yellow);letter-spacing:1px;}
+.product-name{font-weight:600;font-size:13px;}
+.category-badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap;}
+.cat-burger{background:rgba(218,41,28,0.2);color:#ff6b5b;border:1px solid rgba(218,41,28,0.4);}
+.cat-boisson{background:rgba(66,133,244,0.2);color:#7baaf7;border:1px solid rgba(66,133,244,0.4);}
+.cat-frites{background:rgba(255,199,44,0.2);color:var(--yellow);border:1px solid rgba(255,199,44,0.4);}
+.cat-dessert{background:rgba(249,168,212,0.2);color:#f9a8d4;border:1px solid rgba(249,168,212,0.4);}
+.cat-menu{background:rgba(52,211,153,0.2);color:#6ee7b7;border:1px solid rgba(52,211,153,0.4);}
+.cat-snack{background:rgba(167,139,250,0.2);color:#c4b5fd;border:1px solid rgba(167,139,250,0.4);}
+.cat-sauce{background:rgba(251,146,60,0.2);color:#fdba74;border:1px solid rgba(251,146,60,0.4);}
+.cat-autre{background:rgba(156,163,175,0.2);color:#d1d5db;border:1px solid rgba(156,163,175,0.4);}
+
+.price-resto{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#fff;white-space:nowrap;}
+.price-uber{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#bbb;white-space:nowrap;}
+.price-deliveroo{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--deliveroo);white-space:nowrap;}
+.price-override{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--yellow) !important;}
+.price-override::after{content:'*';font-size:10px;vertical-align:super;margin-left:1px;}
+
+.price-edit-input{width:64px;background:var(--darker);border:1px solid var(--yellow);border-radius:5px;padding:3px 5px;color:var(--yellow);font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;text-align:center;outline:none;}
+
+.row-actions{display:flex;gap:4px;}
+.btn-sm{padding:4px 7px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;}
+.btn-edit-sm{background:rgba(255,199,44,0.15);color:var(--yellow);}
+.btn-del-sm{background:rgba(218,41,28,0.15);color:#ff6b5b;}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-state .big{font-size:48px;margin-bottom:12px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:flex-end;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity 0.25s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:500px;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 -20px 60px rgba(0,0,0,0.6);max-height:90vh;overflow-y:auto;}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
+.modal h2{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:var(--yellow);margin-bottom:16px;text-transform:uppercase;}
+.form-group{margin-bottom:12px;}
+.form-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:5px;}
+.form-group input,.form-group select{width:100%;background:var(--darker);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'Barlow',sans-serif;font-size:15px;outline:none;transition:border-color 0.2s;-webkit-appearance:none;}
+.form-group input:focus,.form-group select:focus{border-color:var(--yellow);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.price-preview-box{background:var(--darker);border-radius:10px;padding:12px;margin-top:4px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center;}
+.ppb-label{font-size:10px;color:var(--muted);margin-bottom:3px;}
+.ppb-val{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:900;}
+.ppb-resto{color:#fff;}
+.ppb-uber{color:#bbb;}
+.ppb-deliveroo{color:var(--deliveroo);}
+.modal-actions{display:flex;gap:10px;margin-top:18px;}
+.btn-save{flex:1;padding:12px;background:var(--red);color:#fff;border:none;border-radius:10px;font-family:'Barlow',sans-serif;font-size:15px;font-weight:700;cursor:pointer;}
+.btn-cancel{padding:12px 18px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:10px;font-family:'Barlow',sans-serif;font-size:15px;font-weight:600;cursor:pointer;}
+.override-hint{font-size:11px;color:var(--muted);margin-top:4px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--yellow);color:var(--dark);padding:12px 24px;border-radius:40px;font-weight:700;font-size:14px;opacity:0;transition:all 0.3s;z-index:300;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-logo">M🍔</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <div class="loading-text">Chargement des données partagées...</div>
+</div>
+
+<header>
+  <div class="logo">Mc<span style="color:#fff">Gestionnaire</span></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="sync-indicator">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncText">En ligne</span>
+    </div>
+    <button onclick="openSettings()" style="background:rgba(255,255,255,0.15);border:none;border-radius:8px;padding:6px 10px;color:#fff;font-size:16px;cursor:pointer;">⚙️</button>
+  </div>
+</header>
+
+<!-- DELIVERY RATES INDICATOR -->
+<div class="delivery-banner" id="rateIndicator">
+  <div style="font-size:11px;color:var(--muted);">Majorations actives :</div>
+  <div class="delivery-badge" style="flex:none;padding:5px 10px;">
+    <span class="delivery-logo uber-logo" style="font-size:11px;">Uber</span>
+    <span id="uberPctDisplay" style="color:var(--yellow);font-weight:900;font-family:'Barlow Condensed',sans-serif;font-size:16px;margin-left:6px;">20%</span>
+  </div>
+  <div class="delivery-badge" style="flex:none;padding:5px 10px;">
+    <span class="delivery-logo deliveroo-logo" style="font-size:11px;">Deliveroo</span>
+    <span id="deliverooPctDisplay" style="color:var(--deliveroo);font-weight:900;font-family:'Barlow Condensed',sans-serif;font-size:16px;margin-left:6px;">25%</span>
+  </div>
+  <button class="btn-apply" onclick="openSettings()">✏️ Modifier</button>
+</div>
+
+<!-- VIEW TABS -->
+<div class="view-tabs">
+  <div class="view-tab active" id="tab-all" onclick="setView('all')">🏪 Resto</div>
+  <div class="view-tab" id="tab-uber" onclick="setView('uber')">⚫ Uber Eats</div>
+  <div class="view-tab" id="tab-deliveroo" onclick="setView('deliveroo')">🟦 Deliveroo</div>
+  <div class="view-tab" id="tab-compare" onclick="setView('compare')">📊 Comparaison</div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-value" id="statTotal">—</div><div class="stat-label">Produits</div></div>
+  <div class="stat"><div class="stat-value" id="statBurger">—</div><div class="stat-label">Burgers</div></div>
+  <div class="stat"><div class="stat-value" id="statBoisson">—</div><div class="stat-label">Boissons</div></div>
+  <div class="stat"><div class="stat-value" id="statMenu">—</div><div class="stat-label">Menus</div></div>
+  <div class="stat"><div class="stat-value" id="statPrixMoy">—</div><div class="stat-label">Prix moy.</div></div>
+</div>
+
+<div class="toolbar">
+  <div class="toolbar-row">
+    <input class="search-box" id="searchBox" placeholder="🔍 Nom, PLU, catégorie..." oninput="renderTable()">
+  </div>
+  <div class="cats">
+    <button class="filter-btn active" onclick="setFilter('all',this)">Tous</button>
+    <button class="filter-btn" onclick="setFilter('Burger',this)">🍔 Burgers</button>
+    <button class="filter-btn" onclick="setFilter('Boisson',this)">🥤 Boissons</button>
+    <button class="filter-btn" onclick="setFilter('Frites',this)">🍟 Frites</button>
+    <button class="filter-btn" onclick="setFilter('Menu',this)">🎁 Menus</button>
+    <button class="filter-btn" onclick="setFilter('Dessert',this)">🍦 Desserts</button>
+    <button class="filter-btn" onclick="setFilter('Sauce',this)">🥫 Sauces</button>
+  </div>
+  <div class="toolbar-row">
+    <button class="btn btn-add" onclick="openModal()">+ Ajouter</button>
+    <button class="btn btn-export" onclick="exportCSV()">⬇ Export</button>
+    <button class="btn btn-import" onclick="document.getElementById('csvInput').click()">⬆ Import</button>
+    <input type="file" id="csvInput" accept=".csv,.txt" style="display:none" onchange="importCSV(event)">
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead id="tableHead"><tr></tr></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div class="empty-state" id="emptyState" style="display:none">
+    <div class="big">🍔</div>
+    <p>Aucun produit.<br>Ajoute le premier !</p>
+  </div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="modalTitle">Nouveau produit</h2>
+    <div class="form-group">
+      <label>Nom du produit</label>
+      <input id="fName" placeholder="ex: Big Mac">
+    </div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:4px;letter-spacing:0.5px;">Codes produits par plateforme</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>🏪 Code PLU Resto</label>
+        <input id="fPlu" placeholder="ex: 10042" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label>⚫ Code Uber Eats</label>
+        <input id="fPluUber" placeholder="ex: UB-042" inputmode="text">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label style="color:var(--deliveroo);">🟦 Code Deliveroo</label>
+        <input id="fPluDeliveroo" placeholder="ex: DV-042" inputmode="text">
+      </div>
+      <div class="form-group" style="display:flex;align-items:flex-end;">
+        <div style="font-size:11px;color:var(--muted);padding-bottom:10px;">Laisser vide si pas de code spécifique</div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Catégorie</label>
+        <select id="fCat">
+          <option value="Burger">🍔 Burger</option>
+          <option value="Boisson">🥤 Boisson</option>
+          <option value="Frites">🍟 Frites</option>
+          <option value="Menu">🎁 Menu</option>
+          <option value="Dessert">🍦 Dessert</option>
+          <option value="Snack">🧆 Snack</option>
+          <option value="Sauce">🥫 Sauce</option>
+          <option value="Autre">📦 Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Prix resto (€)</label>
+        <input id="fPrice" type="number" step="0.01" min="0" placeholder="ex: 5.90" inputmode="decimal" oninput="updatePricePreview()">
+      </div>
+    </div>
+
+    <!-- Prix calculés preview -->
+    <div class="price-preview-box" id="pricePreview">
+      <div><div class="ppb-label">🏪 Resto</div><div class="ppb-val ppb-resto" id="ppResto">—</div></div>
+      <div><div class="ppb-label">⚫ Uber</div><div class="ppb-val ppb-uber" id="ppUber">—</div></div>
+      <div><div class="ppb-label">🟦 Deliveroo</div><div class="ppb-val ppb-deliveroo" id="ppDeliveroo">—</div></div>
+    </div>
+
+    <!-- Prix manuels overrides -->
+    <div style="margin-top:14px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px;letter-spacing:0.5px;">Remplacer un prix manuellement (optionnel)</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label style="color:#bbb;">⚫ Prix Uber Eats</label>
+          <input id="fUberOverride" type="number" step="0.01" min="0" placeholder="Auto" inputmode="decimal">
+          <div class="override-hint">Laisser vide = calculé automatiquement</div>
+        </div>
+        <div class="form-group">
+          <label style="color:var(--deliveroo);">🟦 Prix Deliveroo</label>
+          <input id="fDeliverooOverride" type="number" step="0.01" min="0" placeholder="Auto" inputmode="decimal">
+          <div class="override-hint">Laisser vide = calculé automatiquement</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section optionnelle : coût et marges -->
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px;letter-spacing:0.5px;">
+        📊 Coût & Marges <span style="color:var(--border);font-weight:400;text-transform:none;">(optionnel)</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>💰 Coût matière (€)</label>
+          <input id="fCost" type="number" step="0.01" min="0" placeholder="ex: 1.80" inputmode="decimal" oninput="updateMarginPreview()">
+          <div class="override-hint">Prix d'achat / coût de revient</div>
+        </div>
+        <div class="form-group">
+          <label>🏷️ TVA (%)</label>
+          <input id="fTva" type="number" step="0.1" min="0" max="100" placeholder="ex: 10" inputmode="decimal" oninput="updateMarginPreview()">
+          <div class="override-hint">Vide = taux réglages globaux</div>
+        </div>
+      </div>
+
+      <!-- Bloc marges calculées -->
+      <div id="marginBox" style="display:none;background:var(--darker);border-radius:12px;padding:12px;margin-top:4px;">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Marges calculées automatiquement</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="background:var(--card);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Marge Brute</div>
+            <div id="mBrute" style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--green);">—</div>
+            <div id="mBrutePct" style="font-size:11px;color:var(--muted);margin-top:2px;">—</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px;">Prix vente − Coût matière</div>
+          </div>
+          <div style="background:var(--card);border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">Marge Nette</div>
+            <div id="mNette" style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#60a5fa;">—</div>
+            <div id="mNettePct" style="font-size:11px;color:var(--muted);margin-top:2px;">—</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px;">Prix HT − Coût matière</div>
+          </div>
+        </div>
+        <div id="marginUberDeliveroo" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;"></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center;">
+          💡 Marge nette = prix HT (hors TVA) − coût matière
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-save" onclick="saveProduct()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-overlay" id="importOverlay">
+  <div class="modal" style="max-height:85vh;">
+    <div class="modal-handle"></div>
+    <h2>⬆️ Import CSV</h2>
+    <div id="importStep1">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">L'outil détecte automatiquement les colonnes de ton fichier.</p>
+      <div id="importPreview"></div>
+      <div id="importMapping" style="margin-top:12px;"></div>
+    </div>
+    <div id="importStep2" style="display:none;text-align:center;padding:20px 0;">
+      <div style="font-size:40px;margin-bottom:12px;">✅</div>
+      <div id="importResult" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;color:var(--yellow);"></div>
+      <div id="importDetails" style="font-size:13px;color:var(--muted);margin-top:6px;"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeImport()">Annuler</button>
+      <button class="btn-save" id="importConfirmBtn" onclick="confirmImport()" style="display:none">✓ Importer</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>⚙️ Réglages</h2>
+
+    <!-- PRESETS -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px;letter-spacing:0.5px;">⚡ Présets rapides</div>
+    <div id="presetsList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;"></div>
+    <button onclick="savePreset()" style="width:100%;padding:8px;background:transparent;border:1px dashed var(--border);border-radius:8px;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;margin-bottom:16px;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--yellow)';this.style.color='var(--yellow)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      + Sauvegarder les % actuels comme préset
+    </button>
+
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:12px;letter-spacing:0.5px;">Majoration livraison</div>
+
+    <div style="background:var(--darker);border-radius:12px;padding:14px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div>
+          <div style="font-weight:900;color:#fff;font-size:15px;">⚫ Uber Eats</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">% ajouté au prix resto</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="adjustPct('uber',-1)" style="background:var(--card);border:1px solid var(--border);border-radius:6px;width:30px;height:30px;color:var(--text);font-size:16px;cursor:pointer;line-height:1;">−</button>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input id="uberPct" type="number" min="0" max="200" value="20"
+              style="width:70px;background:var(--card);border:1px solid var(--yellow);border-radius:8px;padding:6px 24px 6px 10px;color:var(--yellow);font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;text-align:center;outline:none;">
+            <span style="position:absolute;right:8px;color:var(--yellow);font-weight:900;font-size:14px;">%</span>
+          </div>
+          <button onclick="adjustPct('uber',1)" style="background:var(--card);border:1px solid var(--border);border-radius:6px;width:30px;height:30px;color:var(--text);font-size:16px;cursor:pointer;line-height:1;">+</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);">
+        Exemple : Big Mac à <span style="color:#fff;">5.90€</span> → Uber Eats : <span id="uberExample" style="color:#bbb;font-weight:700;">—</span>
+      </div>
+    </div>
+
+    <div style="background:var(--darker);border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div>
+          <div style="font-weight:900;color:var(--deliveroo);font-size:15px;">🟦 Deliveroo</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">% ajouté au prix resto</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="adjustPct('deliveroo',-1)" style="background:var(--card);border:1px solid var(--border);border-radius:6px;width:30px;height:30px;color:var(--text);font-size:16px;cursor:pointer;line-height:1;">−</button>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input id="deliverooPct" type="number" min="0" max="200" value="25"
+              style="width:70px;background:var(--card);border:1px solid var(--deliveroo);border-radius:8px;padding:6px 24px 6px 10px;color:var(--deliveroo);font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;text-align:center;outline:none;">
+            <span style="position:absolute;right:8px;color:var(--deliveroo);font-weight:900;font-size:14px;">%</span>
+          </div>
+          <button onclick="adjustPct('deliveroo',1)" style="background:var(--card);border:1px solid var(--border);border-radius:6px;width:30px;height:30px;color:var(--text);font-size:16px;cursor:pointer;line-height:1;">+</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);">
+        Exemple : Big Mac à <span style="color:#fff;">5.90€</span> → Deliveroo : <span id="deliverooExample" style="color:var(--deliveroo);font-weight:700;">—</span>
+      </div>
+    </div>
+
+    <div style="background:rgba(255,199,44,0.08);border:1px solid rgba(255,199,44,0.2);border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--muted);">
+      💡 Les pourcentages sont partagés avec toute l'équipe et s'appliquent automatiquement à tous les produits.
+    </div>
+
+    <!-- TVA GLOBALE -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:10px;letter-spacing:0.5px;">TVA par défaut (pour les marges)</div>
+    <div style="background:var(--darker);border-radius:12px;padding:14px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-weight:700;color:#fff;font-size:14px;">🏷️ Taux TVA global</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">Appliqué si non défini par produit</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onclick="adjustTva(-1)" style="background:var(--card);border:1px solid var(--border);border-radius:6px;width:30px;height:30px;color:var(--text);font-size:16px;cursor:pointer;line-height:1;">−</button>
+          <div style="position:relative;display:flex;align-items:center;">
+            <input id="tvaGlobal" type="number" step="0.1" min="0" max="100" value="10"
+              style="width:70px;background:var(--card);border:1px solid var(--green);border-radius:8px;padding:6px 24px 6px 10px;color:var(--green);font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:900;text-align:center;outline:none;">
+            <span style="position:absolute;right:8px;color:var(--green);font-weight:900;font-size:14px;">%</span>
+          </div>
+          <button onclick="adjustTva(1)" style="background:var(--card);border:1px solid var(--border);border-radius:6px;width:30px;height:30px;color:var(--text);font-size:16px;cursor:pointer;line-height:1;">+</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">En France : restauration sur place = <strong style="color:#fff;">10%</strong>, vente à emporter = <strong style="color:#fff;">5.5%</strong></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeSettings()">Annuler</button>
+      <button class="btn-save" onclick="savePcts()">✓ Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let products = [];
+let settings = { uberPct: 20, deliverooPct: 25, presets: [
+  { name: 'Standard', uber: 20, deliveroo: 25 },
+  { name: 'Promo', uber: 15, deliveroo: 15 },
+]};
+let editingId = null;
+let currentFilter = 'all';
+let currentView = 'all';
+let sortKey = 'plu';
+let sortAsc = true;
+let parsedImportData = [];
+
+// ===== STORAGE =====
+async function loadFromStorage() {
+  setSyncing(true);
+  try {
+    const rp = await window.storage.get('mcdo-products', true);
+    const rs = await window.storage.get('mcdo-settings', true);
+    if (rp && rp.value) products = JSON.parse(rp.value);
+    else {
+      products = [
+        {id:1,plu:'10001',name:'Big Mac',category:'Burger',price:5.90},
+        {id:2,plu:'10002',name:'McChicken',category:'Burger',price:4.50},
+        {id:3,plu:'10003',name:'Double Cheeseburger',category:'Burger',price:3.80},
+        {id:4,plu:'20001',name:'Coca-Cola M',category:'Boisson',price:2.00},
+        {id:5,plu:'20002',name:'Coca-Cola L',category:'Boisson',price:2.50},
+        {id:6,plu:'20003',name:'Eau minérale',category:'Boisson',price:1.50},
+        {id:7,plu:'30001',name:'Petites Frites',category:'Frites',price:2.10},
+        {id:8,plu:'30002',name:'Grandes Frites',category:'Frites',price:3.10},
+        {id:9,plu:'40001',name:'Menu Big Mac M',category:'Menu',price:9.90},
+        {id:10,plu:'40002',name:'Menu McChicken M',category:'Menu',price:8.90},
+        {id:11,plu:'50001',name:'McFlurry Oreo',category:'Dessert',price:2.80},
+        {id:12,plu:'60001',name:'Sauce BBQ',category:'Sauce',price:0.40},
+      ];
+      await saveToStorage();
+    }
+    if (rs && rs.value) {
+      settings = JSON.parse(rs.value);
+      document.getElementById('uberPct').value = settings.uberPct;
+      document.getElementById('deliverooPct').value = settings.deliverooPct;
+    }
+  } catch(e) { console.log(e); }
+  setSyncing(false);
+}
+
+async function saveToStorage() {
+  setSyncing(true);
+  try {
+    await window.storage.set('mcdo-products', JSON.stringify(products), true);
+  } catch(e) { showToast('⚠️ Erreur de sauvegarde'); }
+  setSyncing(false);
+}
+
+async function saveSettings() {
+  try { await window.storage.set('mcdo-settings', JSON.stringify(settings), true); }
+  catch(e) {}
+}
+
+function setSyncing(s) {
+  const dot = document.getElementById('syncDot');
+  dot.className = 'sync-dot' + (s ? ' syncing' : '');
+  document.getElementById('syncText').textContent = s ? 'Sync...' : 'En ligne';
+}
+
+// ===== SETTINGS MODAL =====
+function openSettings() {
+  document.getElementById('uberPct').value = settings.uberPct;
+  document.getElementById('deliverooPct').value = settings.deliverooPct;
+  document.getElementById('tvaGlobal').value = settings.tvaGlobal || 10;
+  updateSettingsExamples();
+  renderPresets();
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+function closeSettings() { document.getElementById('settingsOverlay').classList.remove('open'); }
+
+function adjustPct(platform, delta) {
+  const el = document.getElementById(platform === 'uber' ? 'uberPct' : 'deliverooPct');
+  el.value = Math.max(0, Math.min(200, (parseFloat(el.value) || 0) + delta));
+  updateSettingsExamples();
+}
+
+function updateSettingsExamples() {
+  const uberPct = parseFloat(document.getElementById('uberPct').value) || 0;
+  const delivPct = parseFloat(document.getElementById('deliverooPct').value) || 0;
+  const base = 5.90;
+  document.getElementById('uberExample').textContent = (Math.ceil(base * (1 + uberPct / 100) * 20) / 20).toFixed(2) + '€';
+  document.getElementById('deliverooExample').textContent = (Math.ceil(base * (1 + delivPct / 100) * 20) / 20).toFixed(2) + '€';
+}
+
+// ===== PRESETS =====
+function renderPresets() {
+  const list = document.getElementById('presetsList');
+  if (!settings.presets || settings.presets.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0;">Aucun préset. Règle les % et sauvegarde !</div>';
+    return;
+  }
+  list.innerHTML = settings.presets.map((p, i) => `
+    <div style="display:flex;align-items:center;gap:6px;background:var(--darker);border:1px solid var(--border);border-radius:10px;padding:6px 10px;cursor:pointer;transition:all 0.2s;"
+      onclick="applyPreset(${i})" title="Appliquer ce préset">
+      <div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:900;color:var(--text);">${p.name}</div>
+        <div style="font-size:11px;margin-top:1px;">
+          <span style="color:#bbb;">U: ${p.uber}%</span>
+          <span style="color:var(--muted);margin:0 3px;">·</span>
+          <span style="color:var(--deliveroo);">D: ${p.deliveroo}%</span>
+        </div>
+      </div>
+      <button onclick="event.stopPropagation();deletePreset(${i})"
+        style="margin-left:4px;background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1;">×</button>
+    </div>
+  `).join('');
+}
+
+function applyPreset(i) {
+  const p = settings.presets[i];
+  document.getElementById('uberPct').value = p.uber;
+  document.getElementById('deliverooPct').value = p.deliveroo;
+  updateSettingsExamples();
+  showToast(`⚡ Préset "${p.name}" appliqué !`);
+}
+
+function savePreset() {
+  const uber = parseFloat(document.getElementById('uberPct').value) || 0;
+  const deliveroo = parseFloat(document.getElementById('deliverooPct').value) || 0;
+  const name = prompt(`Nom du préset (Uber ${uber}% / Deliveroo ${deliveroo}%) :`, `U${uber}% D${deliveroo}%`);
+  if (!name) return;
+  if (!settings.presets) settings.presets = [];
+  settings.presets.push({ name, uber, deliveroo });
+  saveSettings();
+  renderPresets();
+  showToast('✅ Préset sauvegardé !');
+}
+
+function deletePreset(i) {
+  settings.presets.splice(i, 1);
+  saveSettings();
+  renderPresets();
+}
+
+document.getElementById('uberPct').addEventListener('input', updateSettingsExamples);
+document.getElementById('deliverooPct').addEventListener('input', updateSettingsExamples);
+document.getElementById('settingsOverlay').addEventListener('click', e => { if (e.target === document.getElementById('settingsOverlay')) closeSettings(); });
+
+function adjustTva(delta) {
+  const el = document.getElementById('tvaGlobal');
+  el.value = Math.max(0, Math.min(100, (parseFloat(el.value) || 0) + delta));
+}
+
+// ===== PCT SAVE =====
+function savePcts() {
+  settings.uberPct = parseFloat(document.getElementById('uberPct').value) || 0;
+  settings.deliverooPct = parseFloat(document.getElementById('deliverooPct').value) || 0;
+  settings.tvaGlobal = parseFloat(document.getElementById('tvaGlobal').value) || 10;
+  saveSettings();
+  document.getElementById('uberPctDisplay').textContent = settings.uberPct + '%';
+  document.getElementById('deliverooPctDisplay').textContent = settings.deliverooPct + '%';
+  closeSettings();
+  renderTable();
+  showToast('✅ Réglages enregistrés !');
+}
+
+function calcUber(p) {
+  if (p.uberOverride != null && p.uberOverride !== '') return parseFloat(p.uberOverride);
+  return Math.ceil(p.price * (1 + settings.uberPct / 100) * 20) / 20;
+}
+function calcDeliveroo(p) {
+  if (p.deliverooOverride != null && p.deliverooOverride !== '') return parseFloat(p.deliverooOverride);
+  return Math.ceil(p.price * (1 + settings.deliverooPct / 100) * 20) / 20;
+}
+
+// ===== VIEW TABS =====
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + v).classList.add('active');
+  renderTable();
+}
+
+// ===== STATS =====
+function updateStats() {
+  document.getElementById('statTotal').textContent = products.length;
+  document.getElementById('statBurger').textContent = products.filter(p=>p.category==='Burger').length;
+  document.getElementById('statBoisson').textContent = products.filter(p=>p.category==='Boisson').length;
+  document.getElementById('statMenu').textContent = products.filter(p=>p.category==='Menu').length;
+  const avg = products.length ? (products.reduce((s,p)=>s+parseFloat(p.price),0)/products.length).toFixed(2) : '0.00';
+  document.getElementById('statPrixMoy').textContent = avg + '€';
+}
+
+// ===== RENDER =====
+const catClass = {Burger:'cat-burger',Boisson:'cat-boisson',Frites:'cat-frites',Dessert:'cat-dessert',Menu:'cat-menu',Snack:'cat-snack',Sauce:'cat-sauce',Autre:'cat-autre'};
+const catEmoji = {Burger:'🍔',Boisson:'🥤',Frites:'🍟',Dessert:'🍦',Menu:'🎁',Snack:'🧆',Sauce:'🥫',Autre:'📦'};
+
+function fmt(v) { return parseFloat(v).toFixed(2) + '€'; }
+
+function renderTable() {
+  const q = document.getElementById('searchBox').value.toLowerCase();
+  let data = [...products];
+  if (currentFilter !== 'all') data = data.filter(p => p.category === currentFilter);
+  if (q) data = data.filter(p => p.name.toLowerCase().includes(q) || p.plu.includes(q) || p.category.toLowerCase().includes(q));
+  data.sort((a,b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    if (sortKey === 'price') { va = parseFloat(va); vb = parseFloat(vb); }
+    else { va = String(va).toLowerCase(); vb = String(vb).toLowerCase(); }
+    return sortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+  });
+
+  const thead = document.getElementById('tableHead');
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  // Build headers based on view
+  let headers = '';
+  if (currentView === 'all') {
+    const hasCosts = data.some(p => p.cost != null);
+    headers = `<tr><th onclick="sortBy('plu')">PLU Resto ↕</th><th onclick="sortBy('name')">Produit ↕</th><th onclick="sortBy('category')">Catégorie ↕</th><th onclick="sortBy('price')">🏪 Prix ↕</th><th>⚫ Uber</th><th>🟦 Deliveroo</th>${hasCosts ? '<th>📊 Marge brute</th>' : ''}<th></th></tr>`;
+  } else if (currentView === 'uber') {
+    headers = '<tr><th>PLU Resto</th><th>Produit</th><th>Catégorie</th><th>⚫ Code Uber</th><th>🏪 Prix Resto</th><th>⚫ Prix Uber (+' + settings.uberPct + '%)</th><th>Écart</th><th></th></tr>';
+  } else if (currentView === 'deliveroo') {
+    headers = '<tr><th>PLU Resto</th><th>Produit</th><th>Catégorie</th><th>🟦 Code Deliveroo</th><th>🏪 Prix Resto</th><th>🟦 Prix Deliveroo (+' + settings.deliverooPct + '%)</th><th>Écart</th><th></th></tr>';
+  } else if (currentView === 'compare') {
+    headers = '<tr><th>Produit</th><th>Catégorie</th><th>🏪 PLU / Prix</th><th>⚫ PLU / Prix Uber</th><th>🟦 PLU / Prix Deliveroo</th><th></th></tr>';
+  }
+  thead.innerHTML = headers;
+
+  if (data.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    updateStats();
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = data.map(p => {
+    const uberPrice = calcUber(p);
+    const deliverooPrice = calcDeliveroo(p);
+    const uberOverridden = p.uberOverride != null && p.uberOverride !== '';
+    const deliverooOverridden = p.deliverooOverride != null && p.deliverooOverride !== '';
+    const uberClass = uberOverridden ? 'price-uber price-override' : 'price-uber';
+    const deliverooClass = deliverooOverridden ? 'price-deliveroo price-override' : 'price-deliveroo';
+    const cat = `<span class="category-badge ${catClass[p.category]||'cat-autre'}">${catEmoji[p.category]||'📦'} ${p.category}</span>`;
+
+    let cols = '';
+    const pluUber = p.pluUber || '<span style="color:var(--muted);font-size:11px;">—</span>';
+    const pluDel = p.pluDeliveroo || '<span style="color:var(--muted);font-size:11px;">—</span>';
+    const hasCosts = data.some(p => p.cost != null);
+    if (currentView === 'all') {
+      const marginCol = (hasCosts && p.cost != null) ? (() => {
+        const mb = p.price - p.cost;
+        const mbPct = (mb / p.price * 100).toFixed(1);
+        const color = mb >= 0 ? 'var(--green)' : '#ef4444';
+        return `<td><span style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:900;color:${color};">${mb >= 0 ? '+' : ''}${mb.toFixed(2)}€</span><span style="font-size:10px;color:var(--muted);margin-left:3px;">${mbPct}%</span></td>`;
+      })() : (hasCosts ? '<td><span style="color:var(--muted);font-size:11px;">—</span></td>' : '');
+      cols = `
+        <td><span class="price-resto">${fmt(p.price)}</span></td>
+        <td><span class="${uberClass}">${fmt(uberPrice)}</span></td>
+        <td><span class="${deliverooClass}">${fmt(deliverooPrice)}</span></td>
+        ${marginCol}`;
+    } else if (currentView === 'uber') {
+      const diff = (uberPrice - p.price).toFixed(2);
+      cols = `
+        <td><span class="plu-code" style="color:#bbb;">${pluUber}</span></td>
+        <td><span class="price-resto">${fmt(p.price)}</span></td>
+        <td><span class="${uberClass}">${fmt(uberPrice)}</span></td>
+        <td><span style="color:#888;font-size:13px;">+${diff}€</span></td>`;
+    } else if (currentView === 'deliveroo') {
+      const diff = (deliverooPrice - p.price).toFixed(2);
+      cols = `
+        <td><span class="plu-code" style="color:var(--deliveroo);">${pluDel}</span></td>
+        <td><span class="price-resto">${fmt(p.price)}</span></td>
+        <td><span class="${deliverooClass}">${fmt(deliverooPrice)}</span></td>
+        <td><span style="color:#888;font-size:13px;">+${diff}€</span></td>`;
+    } else if (currentView === 'compare') {
+      cols = `
+        <td>
+          <div style="font-size:11px;color:var(--yellow);">${p.plu}</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:#fff;">${fmt(p.price)}</div>
+        </td>
+        <td>
+          <div style="font-size:11px;color:#bbb;">${p.pluUber||'—'}</div>
+          <div class="${uberClass}">${fmt(uberPrice)}</div>
+        </td>
+        <td>
+          <div style="font-size:11px;color:var(--deliveroo);">${p.pluDeliveroo||'—'}</div>
+          <div class="${deliverooClass}">${fmt(deliverooPrice)}</div>
+        </td>`;
+    }
+
+    const pluDisplay = currentView === 'compare' ? '' : `<td><span class="plu-code">${p.plu}</span></td>`;
+    const nameDisplay = currentView === 'compare'
+      ? `<td><span class="product-name">${p.name}</span></td><td>${cat}</td>`
+      : `<td><span class="product-name">${p.name}</span></td><td>${cat}</td>`;
+
+    return `<tr>
+      ${pluDisplay}
+      ${nameDisplay}
+      ${cols}
+      <td>
+        <div class="row-actions">
+          <button class="btn-sm btn-edit-sm" onclick="editProduct(${p.id})">✏️</button>
+          <button class="btn-sm btn-del-sm" onclick="deleteProduct(${p.id})">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  updateStats();
+}
+
+// ===== FILTER/SORT =====
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+function sortBy(key) {
+  if (sortKey === key) sortAsc = !sortAsc;
+  else { sortKey = key; sortAsc = true; }
+  renderTable();
+}
+
+// ===== MARGIN CALC =====
+function updateMarginPreview() {
+  const price = parseFloat(document.getElementById('fPrice').value) || 0;
+  const cost = parseFloat(document.getElementById('fCost').value);
+  const tvaVal = document.getElementById('fTva').value;
+  const tva = tvaVal !== '' ? parseFloat(tvaVal) : (settings.tvaGlobal || 10);
+  const uberPct = parseFloat(document.getElementById('uberPct').value) || 0;
+  const delivPct = parseFloat(document.getElementById('deliverooPct').value) || 0;
+  const uberOv = document.getElementById('fUberOverride').value;
+  const delivOv = document.getElementById('fDeliverooOverride').value;
+  const uberPrice = uberOv !== '' ? parseFloat(uberOv) : Math.ceil(price * (1 + uberPct / 100) * 20) / 20;
+  const delivPrice = delivOv !== '' ? parseFloat(delivOv) : Math.ceil(price * (1 + delivPct / 100) * 20) / 20;
+
+  // update price preview too
+  updatePricePreview();
+
+  if (isNaN(cost) || cost <= 0 || price <= 0) {
+    document.getElementById('marginBox').style.display = 'none';
+    return;
+  }
+  document.getElementById('marginBox').style.display = 'block';
+
+  const priceHT = price / (1 + tva / 100);
+  const mBrute = price - cost;
+  const mBrutePct = (mBrute / price * 100);
+  const mNette = priceHT - cost;
+  const mNettePct = (mNette / priceHT * 100);
+
+  const colorFor = (v) => v >= 0 ? 'var(--green)' : '#ef4444';
+  document.getElementById('mBrute').style.color = colorFor(mBrute);
+  document.getElementById('mBrute').textContent = (mBrute >= 0 ? '+' : '') + mBrute.toFixed(2) + '€';
+  document.getElementById('mBrutePct').textContent = mBrutePct.toFixed(1) + '%';
+  document.getElementById('mNette').style.color = colorFor(mNette);
+  document.getElementById('mNette').textContent = (mNette >= 0 ? '+' : '') + mNette.toFixed(2) + '€';
+  document.getElementById('mNettePct').textContent = mNettePct.toFixed(1) + '%';
+
+  // Uber & Deliveroo margins
+  const uberHT = uberPrice / (1 + tva / 100);
+  const uberMB = uberPrice - cost;
+  const uberMN = uberHT - cost;
+  const delHT = delivPrice / (1 + tva / 100);
+  const delMB = delivPrice - cost;
+  const delMN = delHT - cost;
+
+  document.getElementById('marginUberDeliveroo').innerHTML = `
+    <div style="background:var(--card);border-radius:8px;padding:8px 10px;">
+      <div style="font-size:10px;color:#bbb;margin-bottom:4px;">⚫ Uber Eats</div>
+      <div style="font-size:12px;"><span style="color:var(--muted);">Brute: </span><span style="color:${colorFor(uberMB)};font-weight:700;">${uberMB >= 0 ? '+' : ''}${uberMB.toFixed(2)}€ (${(uberMB/uberPrice*100).toFixed(1)}%)</span></div>
+      <div style="font-size:12px;margin-top:2px;"><span style="color:var(--muted);">Nette: </span><span style="color:${colorFor(uberMN)};font-weight:700;">${uberMN >= 0 ? '+' : ''}${uberMN.toFixed(2)}€ (${(uberMN/uberHT*100).toFixed(1)}%)</span></div>
+    </div>
+    <div style="background:var(--card);border-radius:8px;padding:8px 10px;">
+      <div style="font-size:10px;color:var(--deliveroo);margin-bottom:4px;">🟦 Deliveroo</div>
+      <div style="font-size:12px;"><span style="color:var(--muted);">Brute: </span><span style="color:${colorFor(delMB)};font-weight:700;">${delMB >= 0 ? '+' : ''}${delMB.toFixed(2)}€ (${(delMB/delivPrice*100).toFixed(1)}%)</span></div>
+      <div style="font-size:12px;margin-top:2px;"><span style="color:var(--muted);">Nette: </span><span style="color:${colorFor(delMN)};font-weight:700;">${delMN >= 0 ? '+' : ''}${delMN.toFixed(2)}€ (${(delMN/delHT*100).toFixed(1)}%)</span></div>
+    </div>`;
+}
+function updatePricePreview() {
+  const price = parseFloat(document.getElementById('fPrice').value) || 0;
+  const uberPct = parseFloat(document.getElementById('uberPct').value) || 0;
+  const deliverooPct = parseFloat(document.getElementById('deliverooPct').value) || 0;
+  const uberOv = parseFloat(document.getElementById('fUberOverride').value);
+  const delivOv = parseFloat(document.getElementById('fDeliverooOverride').value);
+  const uberFinal = !isNaN(uberOv) && document.getElementById('fUberOverride').value !== '' ? uberOv : Math.ceil(price * (1 + uberPct / 100) * 20) / 20;
+  const delivFinal = !isNaN(delivOv) && document.getElementById('fDeliverooOverride').value !== '' ? delivOv : Math.ceil(price * (1 + deliverooPct / 100) * 20) / 20;
+  document.getElementById('ppResto').textContent = price > 0 ? fmt(price) : '—';
+  document.getElementById('ppUber').textContent = price > 0 ? fmt(uberFinal) : '—';
+  document.getElementById('ppDeliveroo').textContent = price > 0 ? fmt(delivFinal) : '—';
+}
+
+function openModal(id = null) {
+  editingId = id;
+  const p = id ? products.find(x => x.id === id) : null;
+  document.getElementById('modalTitle').textContent = id ? '✏️ Modifier' : '➕ Nouveau produit';
+  document.getElementById('fPlu').value = p ? p.plu : '';
+  document.getElementById('fPluUber').value = p ? (p.pluUber || '') : '';
+  document.getElementById('fPluDeliveroo').value = p ? (p.pluDeliveroo || '') : '';
+  document.getElementById('fName').value = p ? p.name : '';
+  document.getElementById('fCat').value = p ? p.category : 'Burger';
+  document.getElementById('fPrice').value = p ? p.price : '';
+  document.getElementById('fUberOverride').value = p && p.uberOverride != null ? p.uberOverride : '';
+  document.getElementById('fDeliverooOverride').value = p && p.deliverooOverride != null ? p.deliverooOverride : '';
+  document.getElementById('fCost').value = p && p.cost != null ? p.cost : '';
+  document.getElementById('fTva').value = p && p.tva != null ? p.tva : '';
+  document.getElementById('marginBox').style.display = 'none';
+  updatePricePreview();
+  updateMarginPreview();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); editingId = null; }
+
+async function saveProduct() {
+  const plu = document.getElementById('fPlu').value.trim();
+  const pluUber = document.getElementById('fPluUber').value.trim();
+  const pluDeliveroo = document.getElementById('fPluDeliveroo').value.trim();
+  const name = document.getElementById('fName').value.trim();
+  const category = document.getElementById('fCat').value;
+  const price = parseFloat(document.getElementById('fPrice').value);
+  const uberOvVal = document.getElementById('fUberOverride').value;
+  const delivOvVal = document.getElementById('fDeliverooOverride').value;
+  const uberOverride = uberOvVal !== '' ? parseFloat(uberOvVal) : null;
+  const deliverooOverride = delivOvVal !== '' ? parseFloat(delivOvVal) : null;
+
+  if (!plu || !name || isNaN(price)) { showToast('⚠️ Remplis tous les champs !'); return; }
+
+  const cost = document.getElementById('fCost').value !== '' ? parseFloat(document.getElementById('fCost').value) : null;
+  const tva = document.getElementById('fTva').value !== '' ? parseFloat(document.getElementById('fTva').value) : null;
+  const entry = { plu, pluUber, pluDeliveroo, name, category, price, uberOverride, deliverooOverride, cost, tva };
+  if (editingId) {
+    const idx = products.findIndex(p => p.id === editingId);
+    products[idx] = { ...entry, id: editingId };
+    showToast('✅ Produit modifié !');
+  } else {
+    const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
+    products.push({ ...entry, id: newId });
+    showToast('✅ Produit ajouté !');
+  }
+  closeModal();
+  await saveToStorage();
+  renderTable();
+}
+
+function editProduct(id) { openModal(id); }
+async function deleteProduct(id) {
+  if (!confirm('Supprimer ce produit ?')) return;
+  products = products.filter(p => p.id !== id);
+  await saveToStorage();
+  renderTable();
+  showToast('🗑 Supprimé');
+}
+
+// ===== EXPORT CSV =====
+function exportCSV() {
+  const header = 'Code PLU Resto;Code PLU Uber;Code PLU Deliveroo;Nom du produit;Catégorie;Prix Resto (€);Prix Uber Eats (€);Prix Deliveroo (€)\n';
+  const rows = products.map(p => `${p.plu};${p.pluUber||''};${p.pluDeliveroo||''};${p.name};${p.category};${p.price.toFixed(2)};${calcUber(p).toFixed(2)};${calcDeliveroo(p).toFixed(2)}`).join('\n');
+  const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `produits_mcdo_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('⬇️ Export CSV téléchargé !');
+}
+
+// ===== IMPORT CSV =====
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  event.target.value = '';
+  const reader = new FileReader();
+  reader.onload = (e) => parseAndPreviewCSV(e.target.result);
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseAndPreviewCSV(text) {
+  const firstLine = text.split('\n')[0];
+  const sep = firstLine.includes(';') ? ';' : firstLine.includes('\t') ? '\t' : ',';
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  if (lines.length < 2) { showToast('⚠️ Fichier invalide'); return; }
+  const headers = lines[0].split(sep).map(h => h.replace(/['"]/g,'').trim());
+  parsedImportData = lines.slice(1).map(l => l.split(sep).map(c => c.replace(/['"]/g,'').trim()));
+  const detect = (kws) => { const i = headers.findIndex(h => kws.some(k => h.toLowerCase().includes(k))); return i >= 0 ? i : null; };
+  const cm = {
+    plu: detect(['plu','code','ref','id','numero']),
+    name: detect(['nom','libelle','libellé','designation','désignation','produit','article']),
+    price: detect(['prix','tarif','montant','pv','vente']),
+    category: detect(['categ','famille','type','groupe'])
+  };
+  const noneOpt = '<option value="">— ignorer —</option>';
+  const opts = headers.map((h,i) => `<option value="${i}" ${''} >${h}</option>`).join('');
+  const mkSelect = (id, matched) => `<select id="${id}" style="width:100%;background:var(--darker);border:1px solid var(--border);border-radius:6px;padding:6px;color:var(--text);font-size:12px;">${noneOpt}${headers.map((h,i)=>`<option value="${i}"${cm[matched]===i?' selected':''}>${h}</option>`).join('')}</select>`;
+
+  document.getElementById('importPreview').innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${parsedImportData.length} lignes détectées</div>`;
+  document.getElementById('importMapping').innerHTML = `
+    <div style="font-size:12px;font-weight:700;color:var(--yellow);margin-bottom:8px;text-transform:uppercase;">Associer les colonnes</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;">Code PLU</div>${mkSelect('mapPlu','plu')}</div>
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;">Nom *</div>${mkSelect('mapName','name')}</div>
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;">Prix (€)</div>${mkSelect('mapPrice','price')}</div>
+      <div><div style="font-size:10px;color:var(--muted);margin-bottom:3px;">Catégorie</div>${mkSelect('mapCat','category')}</div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);cursor:pointer;margin-top:10px;">
+      <input type="checkbox" id="replaceAll" style="width:16px;height:16px;">
+      <span>Remplacer tous les produits existants</span>
+    </label>`;
+  document.getElementById('importStep1').style.display='block';
+  document.getElementById('importStep2').style.display='none';
+  document.getElementById('importConfirmBtn').style.display='block';
+  document.getElementById('importOverlay').classList.add('open');
+}
+
+async function confirmImport() {
+  const mapName = document.getElementById('mapName').value;
+  if (mapName === '') { showToast('⚠️ Sélectionne la colonne Nom'); return; }
+  const mapPlu = document.getElementById('mapPlu').value;
+  const mapPrice = document.getElementById('mapPrice').value;
+  const mapCat = document.getElementById('mapCat').value;
+  const replaceAll = document.getElementById('replaceAll').checked;
+  const guessCat = (v,name) => {
+    const s = (v||name||'').toLowerCase();
+    if(s.includes('burger')||s.includes('sandwich')||s.includes('big mac')||s.includes('mcchicken'))return'Burger';
+    if(s.includes('boisson')||s.includes('coca')||s.includes('jus')||s.includes('eau')||s.includes('café'))return'Boisson';
+    if(s.includes('frite'))return'Frites';
+    if(s.includes('dessert')||s.includes('mcflurry')||s.includes('sundae')||s.includes('glace'))return'Dessert';
+    if(s.includes('menu'))return'Menu';
+    if(s.includes('sauce'))return'Sauce';
+    if(s.includes('snack')||s.includes('nugget')||s.includes('wrap'))return'Snack';
+    return'Autre';
+  };
+  let imported=0, skipped=0, nextId=products.length?Math.max(...products.map(p=>p.id))+1:1;
+  const newP=[];
+  for(const row of parsedImportData){
+    const name=mapName!==''?row[parseInt(mapName)]:'';
+    if(!name){skipped++;continue;}
+    const plu=mapPlu!==''?row[parseInt(mapPlu)]:String(nextId);
+    const price=parseFloat((mapPrice!==''?row[parseInt(mapPrice)]:'0').replace(',','.').replace(/[^0-9.]/g,''))||0;
+    const catRaw=mapCat!==''?row[parseInt(mapCat)]:'';
+    newP.push({id:nextId++,plu:plu||String(nextId),name,category:guessCat(catRaw,name),price,uberOverride:null,deliverooOverride:null});
+    imported++;
+  }
+  products=replaceAll?newP:[...products,...newP];
+  await saveToStorage();
+  renderTable();
+  document.getElementById('importStep1').style.display='none';
+  document.getElementById('importStep2').style.display='block';
+  document.getElementById('importConfirmBtn').style.display='none';
+  document.getElementById('importResult').textContent=`${imported} produits importés !`;
+  document.getElementById('importDetails').textContent=skipped>0?`${skipped} lignes ignorées`:'Tous importés avec succès.';
+  setTimeout(()=>closeImport(),2500);
+}
+function closeImport(){document.getElementById('importOverlay').classList.remove('open');parsedImportData=[];}
+
+// ===== TOAST =====
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ===== CLOSE MODALS =====
+document.getElementById('modalOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('modalOverlay'))closeModal();});
+document.getElementById('importOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('importOverlay'))closeImport();});
+document.getElementById('fUberOverride').addEventListener('input',updatePricePreview);
+document.getElementById('fDeliverooOverride').addEventListener('input',updatePricePreview);
+
+// ===== AUTO REFRESH =====
+setInterval(async()=>{ await loadFromStorage(); renderTable(); }, 30000);
+
+// ===== INIT =====
+async function init() {
+  await loadFromStorage();
+  document.getElementById('uberPctDisplay').textContent = settings.uberPct + '%';
+  document.getElementById('deliverooPctDisplay').textContent = settings.deliverooPct + '%';
+  renderTable();
+  document.getElementById('loadingScreen').style.display='none';
+}
+init();
+</script>
+</body>
+</html>
